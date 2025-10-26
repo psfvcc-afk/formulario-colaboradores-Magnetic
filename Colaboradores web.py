@@ -17,7 +17,7 @@ st.set_page_config(
 DROPBOX_TOKEN = st.secrets["DROPBOX_TOKEN"]
 
 # Caminho EXATO do ficheiro existente no Dropbox
-DROPBOX_FILE_PATH = "/Pedro Couto/Projectos/Pingo Doce/Pingo Doce/2. Operação/1. Recursos Humanos/Processamento salarial/Gestão Colaboradores.xlsx"
+DROPBOX_FILE_PATH = "/Pedro Couto/Projectos/Alcalá_Arc_Amoreira/Gestão operacional/RH/Processamento Salários Magnetic"
 
 # Inicializar cliente Dropbox
 dbx = dropbox.Dropbox(DROPBOX_TOKEN)
