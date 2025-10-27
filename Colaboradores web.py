@@ -6,29 +6,36 @@ from io import BytesIO
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 
-# ---------------------- CONFIGURAÇÃO STREAMLIT ----------------------
 st.set_page_config(
-    page_title="Registo de Colaboradores CCM Retail Lda",
+    page_title="Registo de Colaboradores",
     page_icon="📋",
     layout="centered"
 )
 
-# ---------------------- CONFIGURAÇÃO DO DROPBOX (ATUALIZADO COM OAUTH 2) ----------------------
+# Configuração OAuth 2 Dropbox
 DROPBOX_APP_KEY = st.secrets["DROPBOX_APP_KEY"]
 DROPBOX_APP_SECRET = st.secrets["DROPBOX_APP_SECRET"]
 DROPBOX_REFRESH_TOKEN = st.secrets["DROPBOX_REFRESH_TOKEN"]
 
-# Caminho do ficheiro no Dropbox
-DROPBOX_FILE_PATH = "/Pedro Couto/Projectos/Alcalá_Arc_Amoreira/Gestão operacional/RH/Processamento Salários Magnetic/Gestão Colaboradores Magnetic.xlsx"
-
-# Inicializar cliente Dropbox com OAuth 2
 dbx = dropbox.Dropbox(
     app_key=DROPBOX_APP_KEY,
     app_secret=DROPBOX_APP_SECRET,
     oauth2_refresh_token=DROPBOX_REFRESH_TOKEN
 )
 
-# ---------------------- LISTA DE BAIRROS FISCAIS ----------------------
+# Configuração das empresas
+EMPRESAS = {
+    "Magnetic Sky Lda": {
+        "path": "/Pedro Couto/Projectos/Alcalá_Arc_Amoreira/Gestão operacional/RH/Processamento Salários Magnetic/Gestão Colaboradores Magnetic.xlsx",
+        "seccoes": ["Arc", "Alcalá", "Amoreira TA"]
+    },
+    "CCM Retail Lda (Pingo Doce)": {
+        "path": "/Pedro Couto/Projectos/Pingo Doce/Pingo Doce/2. Operação/1. Recursos Humanos/Processamento salarial/Gestão Colaboradores.xlsx",
+        "seccoes": ["Charcutaria/Lacticínios", "Frente de Loja", "Frutas e Vegetais", "Gerência", 
+                    "Não Perecíveis (reposição)", "Padaria e Take Away", "Peixaria", "Quiosque", "Talho"]
+    }
+}
+
 BAIRROS_FISCAIS = [
     "01-AVEIRO - 19-AGUEDA", "01-AVEIRO - 27-ALBERGARIA-A-VELHA", "01-AVEIRO - 35-ANADIA", "01-AVEIRO - 43-AROUCA",
     "01-AVEIRO - 51-AVEIRO-1", "01-AVEIRO - 60-CASTELO DE PAIVA", "01-AVEIRO - 78-ESPINHO", "01-AVEIRO - 86-ESTARREJA",
@@ -45,7 +52,6 @@ BAIRROS_FISCAIS = [
     "22-FUNCHAL - 2810-FUNCHAL-1", "22-FUNCHAL - 2895-SANTANA"
 ]
 
-# ---------------------- FUNÇÕES DE VALIDAÇÃO ----------------------
 def validar_email(email):
     if "@" not in email:
         return False
@@ -73,10 +79,9 @@ def validar_iban(iban):
 def validar_cc(cc):
     return len(cc.strip()) > 0
 
-# ---------------------- FUNÇÕES DE LER E GRAVAR ----------------------
-def carregar_dados_dropbox():
+def carregar_dados_dropbox(file_path):
     try:
-        _, response = dbx.files_download(DROPBOX_FILE_PATH)
+        _, response = dbx.files_download(file_path)
         data = response.content
         df = pd.read_excel(BytesIO(data), sheet_name="Colaboradores")
         return df
@@ -85,49 +90,50 @@ def carregar_dados_dropbox():
             "Nome Completo", "Secção", "Nº Horas/Semana", "E-mail", "Data de Nascimento",
             "NISS", "NIF", "Documento de Identificação", "Validade Documento", "Bairro Fiscal",
             "Estado Civil", "Nº Titulares", "Nº Dependentes", "Morada", "IBAN",
-            "Data de Admissão", "Nacionalidade", "Telemóvel", "Data de Registo"
+            "Data de Admissão", "Nacionalidade", "Telemóvel", "Subsídio Alimentação Diário",
+            "Pessoa com Deficiência", "Tipo IRS", "% IRS Fixa", "Data de Registo"
         ]
         return pd.DataFrame(columns=colunas)
 
-def guardar_dados_dropbox(df):
+def guardar_dados_dropbox(df, file_path):
     try:
-        _, response = dbx.files_download(DROPBOX_FILE_PATH)
+        _, response = dbx.files_download(file_path)
         existing_data = response.content
-
         wb = load_workbook(BytesIO(existing_data))
-
         if "Colaboradores" in wb.sheetnames:
             del wb["Colaboradores"]
-
         ws = wb.create_sheet("Colaboradores")
         for r in dataframe_to_rows(df, index=False, header=True):
             ws.append(r)
-
         output = BytesIO()
         wb.save(output)
         output.seek(0)
-
-        dbx.files_upload(
-            output.read(),
-            DROPBOX_FILE_PATH,
-            mode=dropbox.files.WriteMode.overwrite
-        )
+        dbx.files_upload(output.read(), file_path, mode=dropbox.files.WriteMode.overwrite)
         return True
-
     except Exception as e:
         st.error(f"Erro ao guardar no Dropbox: {e}")
         return False
 
-# ---------------------- INTERFACE STREAMLIT ----------------------
-
+# Interface
 st.title("📋 Registo de Colaboradores")
 st.markdown("---")
 
+# Seleção da empresa
+empresa_selecionada = st.selectbox(
+    "🏢 Selecione a Empresa *",
+    options=list(EMPRESAS.keys()),
+    help="Escolha a empresa para registar o colaborador"
+)
+
+st.markdown(f"### Registando para: **{empresa_selecionada}**")
+st.markdown("---")
+
+config_empresa = EMPRESAS[empresa_selecionada]
+
 with st.form("formulario_colaborador"):
     st.subheader("Dados Pessoais")
-
     col1, col2 = st.columns(2)
-
+    
     with col1:
         nome = st.text_input("Nome Completo *", help="Nome completo do colaborador")
         email = st.text_input("E-mail *", help="Email corporativo ou pessoal (deve conter @)")
@@ -139,7 +145,7 @@ with st.form("formulario_colaborador"):
         )
         nif = st.text_input("NIF *", max_chars=9, help="9 dígitos")
         niss = st.text_input("NISS *", max_chars=11, help="11 dígitos")
-
+    
     with col2:
         telemovel = st.text_input("Telemóvel *", max_chars=9, help="9 dígitos")
         nacionalidade = st.text_input("Nacionalidade *", help="Ex: Portuguesa")
@@ -148,15 +154,20 @@ with st.form("formulario_colaborador"):
             options=BAIRROS_FISCAIS,
             help="Serviço de finanças da área de residência"
         )
+        pessoa_deficiencia = st.selectbox(
+            "Pessoa com deficiência? *",
+            options=["Não", "Sim"],
+            help="Para aplicação correta da tabela de IRS"
+        )
         doc_identificacao = st.text_input(
             "Documento de Identificação *",
             help="Formato CC: 12345678 0 ZW0 ou 'Passaporte' ou 'Cartão de Residência'"
         )
         validade_doc = st.date_input("Validade do Documento *", help="Formato: dd/mm/aaaa")
-
+    
     st.subheader("Situação Familiar")
     col3, col4 = st.columns(2)
-
+    
     with col3:
         estado_civil = st.selectbox(
             "Estado Civil / Nº Titulares *",
@@ -167,31 +178,26 @@ with st.form("formulario_colaborador"):
             "Nº Titulares *", min_value=1, max_value=2, value=1,
             help="Número de titulares do agregado familiar"
         )
-
+    
     with col4:
         num_dependentes = st.number_input(
             "Nº Dependentes *", min_value=0, value=0,
             help="Número de dependentes a cargo"
         )
-
+    
     st.subheader("Morada")
     morada = st.text_area(
         "Morada Completa *",
         help="Completa com rua, lote, porta, andar, código postal e cidade"
     )
-
+    
     st.subheader("Dados Profissionais")
-
     col5, col6 = st.columns(2)
-
+    
     with col5:
         secao = st.selectbox(
             "Secção *",
-            options=[
-                "Arc",
-                "Alcalá",
-                "Amoreira TA"
-            ],
+            options=config_empresa["seccoes"],
             help="Departamento ou secção do colaborador"
         )
         horas_semana = st.selectbox(
@@ -200,7 +206,7 @@ with st.form("formulario_colaborador"):
             help="Horas de trabalho semanais (16h, 20h ou 40h)"
         )
         data_admissao = st.date_input("Data de Admissão *", help="Formato: dd/mm/aaaa")
-
+    
     with col6:
         iban = st.text_input(
             "IBAN *",
@@ -208,15 +214,39 @@ with st.form("formulario_colaborador"):
             placeholder="PT50 0000 0000 0000 0000 0000 0",
             help="Formato: PT50 seguido de 21 dígitos (25 caracteres no total)"
         )
-
+        subsidio_alimentacao = st.number_input(
+            "Subsídio de Alimentação Diário *",
+            min_value=0.0,
+            step=0.01,
+            format="%.2f",
+            help="Valor diário do subsídio de alimentação em euros"
+        )
+        tipo_irs = st.selectbox(
+            "Tipo de IRS *",
+            options=["Automático (por tabela)", "Percentagem fixa"],
+            help="Escolha como calcular o IRS deste colaborador"
+        )
+    
+    if tipo_irs == "Percentagem fixa":
+        percentagem_irs_fixa = st.number_input(
+            "Percentagem IRS Fixa *",
+            min_value=0.0,
+            max_value=100.0,
+            step=0.1,
+            format="%.1f",
+            help="Percentagem de IRS a aplicar (exemplo: 15.5)"
+        )
+    else:
+        percentagem_irs_fixa = None
+    
     st.markdown("---")
     st.caption("* Campos obrigatórios")
-
+    
     submitted = st.form_submit_button("✅ Submeter Registo", use_container_width=True)
-
+    
     if submitted:
         erros = []
-
+        
         if not nome or len(nome) < 3:
             erros.append("Nome completo é obrigatório")
         if not email or not validar_email(email):
@@ -235,7 +265,11 @@ with st.form("formulario_colaborador"):
             erros.append("Morada completa é obrigatória")
         if not nacionalidade:
             erros.append("Nacionalidade é obrigatória")
-
+        if subsidio_alimentacao <= 0:
+            erros.append("Subsídio de alimentação deve ser maior que zero")
+        if tipo_irs == "Percentagem fixa" and (percentagem_irs_fixa is None or percentagem_irs_fixa < 0):
+            erros.append("Percentagem de IRS fixa deve ser definida e válida")
+        
         if erros:
             st.error("Por favor corrija os seguintes erros:")
             for erro in erros:
@@ -260,19 +294,23 @@ with st.form("formulario_colaborador"):
                 "Data de Admissão": data_admissao.strftime("%d/%m/%Y"),
                 "Nacionalidade": nacionalidade,
                 "Telemóvel": telemovel,
+                "Subsídio Alimentação Diário": subsidio_alimentacao,
+                "Pessoa com Deficiência": pessoa_deficiencia,
+                "Tipo IRS": tipo_irs,
+                "% IRS Fixa": percentagem_irs_fixa if percentagem_irs_fixa is not None else "",
                 "Data de Registo": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             }
-
+            
             with st.spinner("A guardar..."):
-                df = carregar_dados_dropbox()
+                df = carregar_dados_dropbox(config_empresa["path"])
                 df = pd.concat([df, pd.DataFrame([novo_registo])], ignore_index=True)
-
-                if guardar_dados_dropbox(df):
-                    st.success("✅ Registo guardado com sucesso!")
+                
+                if guardar_dados_dropbox(df, config_empresa["path"]):
+                    st.success(f"✅ Registo guardado com sucesso em {empresa_selecionada}!")
                     st.balloons()
-                    st.info(f"Total de colaboradores registados: {len(df)}")
+                    st.info(f"Total de colaboradores registados em {empresa_selecionada}: {len(df)}")
                 else:
                     st.error("❌ Erro ao guardar o registo. Tente novamente.")
 
 st.markdown("---")
-st.caption("Formulário de Registo de Colaboradores | Dados guardados de forma segura no Dropbox")
+st.caption(f"Formulário de Registo de Colaboradores | {empresa_selecionada} | Dados guardados de forma segura no Dropbox")
