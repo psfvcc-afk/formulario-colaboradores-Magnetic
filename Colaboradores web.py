@@ -8,7 +8,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 
 # ---------------------- CONFIGURAÇÃO STREAMLIT ----------------------
 st.set_page_config(
-    page_title="Registo de Colaboradores Magnetic Sky,Lda",
+    page_title="Registo de Colaboradores CCM Retail Lda",
     page_icon="📋",
     layout="centered"
 )
@@ -20,7 +20,7 @@ DROPBOX_APP_SECRET = st.secrets["DROPBOX_APP_SECRET"]
 DROPBOX_REFRESH_TOKEN = st.secrets["DROPBOX_REFRESH_TOKEN"]
 
 # 🔥 MUDANÇA: Caminho atualizado para Arc/Alcalá/Amoreira
-DROPBOX_FILE_PATH = "/Pedro Couto/Projectos/Alcalá_Arc_Amoreira/Gestão operacional/RH/Processamento Salários Magnetic/Gestão Colaboradores Magnetic.xlsx"
+DROPBOX_FILE_PATH = "/Pedro Couto/Projectos/Alcalá_Arc_Amoreira/Gestão operacional/RH/Processamento Salários Magnetic/Gestão Colaboradores Magnetic.xlsx"
 
 # 🔥 MUDANÇA: Inicializar cliente Dropbox com OAuth 2
 dbx = dropbox.Dropbox(
