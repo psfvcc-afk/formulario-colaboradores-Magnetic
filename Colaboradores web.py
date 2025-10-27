@@ -19,8 +19,8 @@ DROPBOX_APP_KEY = st.secrets["DROPBOX_APP_KEY"]
 DROPBOX_APP_SECRET = st.secrets["DROPBOX_APP_SECRET"]
 DROPBOX_REFRESH_TOKEN = st.secrets["DROPBOX_REFRESH_TOKEN"]
 
-# Caminho EXATO do ficheiro existente no Dropbox
-DROPBOX_FILE_PATH = "/Pedro Couto/Projectos/Pingo Doce/Pingo Doce/2. Operação/1. Recursos Humanos/Processamento salarial/Gestão Colaboradores.xlsx"
+# 🔥 MUDANÇA: Caminho atualizado para Arc/Alcalá/Amoreira
+DROPBOX_FILE_PATH = "/Pedro Couto/Projectos/Alcalá_Arc_Amoreira/Gestão operacional/RH/Processamento Salários Magnetic"
 
 # 🔥 MUDANÇA: Inicializar cliente Dropbox com OAuth 2
 dbx = dropbox.Dropbox(
@@ -186,6 +186,7 @@ with st.form("formulario_colaborador"):
     col5, col6 = st.columns(2)
 
     with col5:
+        # 🔥 MUDANÇA: Lista de secções atualizada para Arc, Alcalá e Amoreira TA
         secao = st.selectbox(
             "Secção *",
             options=[
