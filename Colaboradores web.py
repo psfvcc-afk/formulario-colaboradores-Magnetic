@@ -8,7 +8,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 
 # ---------------------- CONFIGURAÇÃO STREAMLIT ----------------------
 st.set_page_config(
-    page_title="Registo de Colaboradores",
+    page_title="Registo de Colaboradores Magnetic Sky,Lda",
     page_icon="📋",
     layout="centered"
 )
