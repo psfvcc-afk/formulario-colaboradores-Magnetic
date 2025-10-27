@@ -20,7 +20,7 @@ DROPBOX_APP_SECRET = st.secrets["DROPBOX_APP_SECRET"]
 DROPBOX_REFRESH_TOKEN = st.secrets["DROPBOX_REFRESH_TOKEN"]
 
 # 🔥 MUDANÇA: Caminho atualizado para Arc/Alcalá/Amoreira
-DROPBOX_FILE_PATH = "/Pedro Couto/Projectos/Alcalá_Arc_Amoreira/Gestão operacional/RH/Processamento Salários Magnetic"
+DROPBOX_FILE_PATH = "/Pedro Couto/Projectos/Alcalá_Arc_Amoreira/Gestão operacional/RH/Processamento Salários Magnetic.xlsx"
 
 # 🔥 MUDANÇA: Inicializar cliente Dropbox com OAuth 2
 dbx = dropbox.Dropbox(
